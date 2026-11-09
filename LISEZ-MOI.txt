@@ -1,0 +1,55 @@
+PRÜFUNGSTRAINER v3.3 — H Conseil & Formation
+=============================================
+
+CONTENU DU DOSSIER
+  index.html, app.js            l'application (interface malagasy + français)
+  admin.js                      connexion serveur, synchronisation, ESPACE ADMIN
+  config.js                     réglages (WhatsApp, Gemini, essai gratuit, comptes de démo)
+  data/…                        les 40 Modellsätze (A1, A2, B1, B2 · Goethe et ÖSD)
+  netlify/functions/api.mjs     serveur : comptes, mots de passe, résultats, admin
+  netlify/functions/gemini.mjs  pont sécurisé vers Gemini
+  package.json, netlify.toml    réglages Netlify (ne pas toucher)
+  audio/                        mettre ici les MP3 générés sur speechma
+  TRANSCRIPTIONS_AUDIO_speechma.txt   les 515 textes audio
+
+1) METTRE EN LIGNE
+  - Envoie tout le contenu du dossier dans ton dépôt GitHub (remplace l'ancienne version).
+  - Netlify redéploie automatiquement.
+
+2) RÉGLAGES NETLIFY (une seule fois)
+  Netlify → Site configuration → Environment variables → Add a variable :
+      ADMIN_PASSWORD  = ton mot de passe admin (long, que toi seule connais)
+      SESSION_SECRET  = une longue phrase au hasard (ex. 40 caractères), ne la change plus ensuite
+      GEMINI_API_KEY  = ta clé Gemini (aistudio.google.com)
+  Puis Deploys → Trigger deploy.
+  La base de données (Netlify Blobs) est intégrée à Netlify : rien d'autre à créer.
+
+3) ESPACE ADMIN
+  - Va sur le site, connecte-toi avec   ID : ADMIN   mot de passe : ta valeur ADMIN_PASSWORD.
+  - Tu arrives dans l'espace admin. Tu peux :
+      • créer un élève (ID, nom, WhatsApp, examens ouverts, date de fin, note interne)
+        → le mot de passe est généré et un bouton l'envoie directement par WhatsApp ;
+      • prolonger un accès (+1, +3, +6, +12 mois), bloquer / débloquer, supprimer ;
+      • donner un nouveau mot de passe (l'élève est alors déconnecté partout) ;
+      • voir pour chaque élève : connexions, modules faits, scores par Modellsatz, mots acquis ;
+      • filtrer (actifs, expirent bientôt, expirés) et exporter la liste en CSV (Excel).
+  - Bouton « Importer config.js » : copie sur le serveur les comptes encore listés dans
+    config.js (avec leur mot de passe actuel). Ensuite, vide cette liste dans config.js.
+
+4) CE QUI CHANGE POUR LES ÉLÈVES
+  - Ils se connectent comme avant (ID + mot de passe).
+  - Leurs résultats sont enregistrés sur le serveur : ils les retrouvent sur un autre
+    téléphone, et toi tu les vois dans l'espace admin.
+  - Si leur accès expire ou si tu les bloques, ils sont déconnectés.
+  - Gemini (correction Schreiben, explications) n'est utilisable qu'en étant connecté.
+
+5) SÉCURITÉ
+  - Les mots de passe sont chiffrés (scrypt) sur le serveur ; personne ne peut les lire,
+    même pas toi : en cas d'oubli, tu en donnes un nouveau.
+  - Après 8 mauvais mots de passe, le compte est bloqué 15 minutes.
+  - Sans ADMIN_PASSWORD, le site fonctionne en « mode démo » avec les comptes de config.js
+    (c'est ce qui se passe dans l'aperçu Claude).
+
+6) AUDIOS
+  Génère chaque texte du fichier TRANSCRIPTIONS sur speechma, en MP3, avec exactement le nom
+  indiqué, et mets-les dans audio/. Sans MP3, l'app lit le texte avec la voix du navigateur.
