@@ -323,7 +323,7 @@ function paintCorrection(it){
   else b.querySelectorAll("[data-q]").forEach(x=>{ x.classList.remove("sel"); const v=x.dataset.v, isA=Array.isArray(it.a)?it.a.includes(v):v===it.a, isG=Array.isArray(g)?g.includes(v):v===g; if (isA) x.classList.add("ok"); else if (isG) x.classList.add("ko"); x.style.pointerEvents="none"; });
   const aiOn=CFG.gemini&&!isTrial();
   b.querySelector(".expbox").innerHTML=`<div class="exp"><span class="v" style="color:${ok?"var(--teal)":sc>0?"#a8640a":"var(--red)"}">${ok?"✓ Marina · Juste":none?"— Tsy namaly · Sans réponse":sc>0?"◐ Ampahany · Partiel":"✗ Diso · Faux"}</span>${ok?"":`Valiny marina · Bonne réponse : <b>${esc(rightLabel(it))}</b>`}${bi(it.exp)}
-    ${aiOn?`<div style="margin-top:8px"><button class="btn ai sm" onclick="aiExplain(${it.n})">🤖 Hazavao bebe kokoa (Gemini)</button></div><div id="ai${it.n}">${S.ai[it.n]?aiHtml(S.ai[it.n]):""}</div>`:""}</div>`;
+    ${aiOn?`<div style="margin-top:8px"><button class="btn ai sm" onclick="aiExplain(${it.n})">🤖 Hazavao bebe kokoa</button></div><div id="ai${it.n}">${S.ai[it.n]?aiHtml(S.ai[it.n]):""}</div>`:""}</div>`;
 }
 function checkTeil(){
   const t=curSet()[S.mod].teile[S.teil], items=itemsOf(t), miss=items.filter(it=>!answered(it)).length;
@@ -354,12 +354,12 @@ function reviewTeil(i){ S.view="run"; S.mode="review"; S.teil=i; render(); scrol
    GEMINI
    ========================================================= */
 async function callGemini(task,data){ try{ const r=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json",...(DB.token&&!String(DB.token).startsWith("local:")?{authorization:"Bearer "+DB.token}:{})},body:JSON.stringify({task,data})}); const j=await r.json().catch(()=>({})); if (!r.ok||!j.ok) throw 0; return j.result; }catch(e){ return {_err:true}; } }
-const AI_OFF=`<div class="aibox">⚠️ Tsy mandeha eto ny Gemini. Mandeha izy rehefa ao amin'ny site Netlify misy ny clé GEMINI_API_KEY.<br><span class="fr">Gemini fonctionne une fois le site en ligne sur Netlify avec la clé.</span></div>`;
-const aiHtml = r => r._err ? AI_OFF : `<div class="aibox"><b>🤖 Gemini</b>${bi(r)}</div>`;
+const AI_OFF=`<div class="aibox">⚠️ Nisy olana ny serivisy ankehitriny. Andramo indray any aoriana.<br><span class="fr">Une erreur est survenue. Veuillez réessayer plus tard.</span></div>`;
+const aiHtml = r => r._err ? AI_OFF : `<div class="aibox"><b>🤖 IA</b>${bi(r)}</div>`;
 function stripHtml(h){ const d=document.createElement("div"); d.innerHTML=h||""; return d.textContent; }
 async function aiExplain(n){
   const {it,t}=findItem(n), box=$("#ai"+n); if (!box) return;
-  box.innerHTML=`<div class="aibox"><span class="spin"></span> Mieritreritra i Gemini…</div>`;
+  box.innerHTML=`<div class="aibox"><span class="spin"></span> Mieritreritra…</div>`;
   let texte=""; if (t.clips){ const c=t.clips.find(c=>c.items.some(x=>x.n===n)); texte=c.script.map(l=>l.n+": "+l.t).join("\n"); } else if (t.texte) texte=stripHtml(t.texte);
   if (t.choix||t.annonces) texte+="\n"+Object.entries(choixOf(t)).map(([k,v])=>k+") "+stripHtml(v)).join("\n");
   let opts=it.opts; if (it.type==="rf") opts=["Richtig","Falsch"]; if (it.type==="jn") opts=["Ja","Nein"]; if (it.type==="who") opts=Object.entries(t.personnes).map(([k,p])=>k+" = "+p);
@@ -414,7 +414,7 @@ function vWrite(){
     <details><summary>Redemittel — fehezanteny ilaina · phrases utiles</summary><div class="in rm"><ul>${A.redemittel.map(r=>`<li>${esc(r)}</li>`).join("")}</ul></div></details>
     <div class="card" style="margin-top:12px"><h3 style="font-size:16px">✔️ Checklist · Hamarino ny lahatsoratrao</h3>${A.checklist.map((c,i)=>`<label class="check"><input type="checkbox" ${DB.notes[dk+"_c"+i]?"checked":""} onchange="DB.notes['${dk}_c${i}']=this.checked;save()"><span>${esc(c)}</span></label>`).join("")}</div>`}
     <div class="row" style="margin-top:12px">
-      ${CFG.gemini&&!isTrial()?`<button class="btn ai" onclick="aiWrite(${S.teil})">🤖 Correction Gemini</button>`:""}
+      ${CFG.gemini&&!isTrial()?`<button class="btn ai" onclick="aiWrite(${S.teil})">🤖 Correction IA</button>`:""}
       ${exam?`<button class="btn acc" onclick="confirmWriteFinish()">Hamarana · Terminer et noter</button>`:`<button class="btn teal" onclick="S.showModel=!S.showModel;render()">${S.showModel?"Afeno":"Jereo"} ny modèle</button>`}
       ${isTrial()||exam?"":`<a class="btn wa" target="_blank" rel="noopener" href="#" onclick="this.href=waLink('Schreiben ${S.level} – ${A.nom} ('+DB.user.id+'):\\n\\n'+($('#ta').value||''))">Alefa amin'ny mpampianatra</a>`}
     </div>
@@ -445,7 +445,7 @@ function toggleWriteTimer(min){ if (S.timer){ stopTimer(); $("#tbtn").textConten
 function writePoints(ai,A){ if (!ai||ai._err||!ai.criteres) return null; const vals=Object.values(ai.criteres).map(c=>GRADE[(c.note||"E").trim()[0]]??0); return Math.round(vals.reduce((a,b)=>a+b,0)/Math.max(vals.length,1)*wpts(A)*10)/10; }
 function writeAiHtml(ai,A){
   if (ai._err) return AI_OFF;
-  return `<div class="card" style="margin-top:12px;border-color:#c9b8f7"><div class="row"><h3 style="font-size:17px">🤖 Correction Gemini</h3><div class="sp"></div><span class="pill b" style="font-size:14px">${writePoints(ai,A)} / ${wpts(A)} points</span></div>
+  return `<div class="card" style="margin-top:12px;border-color:#c9b8f7"><div class="row"><h3 style="font-size:17px">🤖 Correction IA</h3><div class="sp"></div><span class="pill b" style="font-size:14px">${writePoints(ai,A)} / ${wpts(A)} points</span></div>
     <table class="t" style="margin-top:8px">${Object.entries(ai.criteres||{}).map(([k,c])=>`<tr><td style="width:44px"><span class="grade g${(c.note||"E").trim()[0]}">${esc((c.note||"").trim()[0])}</span></td><td><b>${esc(k)}</b>${bi(c)}</td></tr>`).join("")}</table>
     ${(ai.fautes||[]).length?`<h4 style="margin:14px 0 4px">Hadisoana · Fautes</h4>${ai.fautes.map(f=>`<div class="fault"><s>${esc(f.faux)}</s> → <b>${esc(f.correct)}</b>${bi(f)}</div>`).join("")}`:""}
     ${ai.points_forts?`<h4 style="margin:14px 0 4px">👍 Ny tsara · Points forts</h4>${bi(ai.points_forts)}`:""}
@@ -457,10 +457,10 @@ function aiPayload(A,texte){ const W=curSet().schreiben; return {examen:examTitl
 async function aiWrite(idx){
   const A=curSet().schreiben.aufgaben[idx], dk=resKey()+"_"+A.id, texte=DB.drafts[dk]||"";
   if ((texte.trim().match(/\S+/g)||[]).length<5){ toast("Soraty aloha ny lahatsoratrao 🙂 · Écris d'abord ton texte."); return; }
-  const box=$("#aiw"); if (box) box.innerHTML=`<div class="aibox"><span class="spin"></span> Manitsy i Gemini… · Correction en cours…</div>`;
+  const box=$("#aiw"); if (box) box.innerHTML=`<div class="aibox"><span class="spin"></span> Manitsy… · Correction en cours…</div>`;
   const r=await callGemini("schreiben",aiPayload(A,texte)); DB.ai[dk]=r; save(); const b=$("#aiw"); if (b&&S.teil===idx) b.innerHTML=writeAiHtml(r,A);
 }
-function confirmWriteFinish(){ modal(`<h3>Hamarana ny Schreiben?</h3><p class="muted">Hitsirin'i Gemini ireo asa soratra ary homena naoty /100 ianao. · Correction et note /100.</p><div class="row"><button class="btn acc" onclick="closeModal();finishWriteExam()">Eny · Oui</button><button class="btn ghost" onclick="closeModal()">Hiverina</button></div>`); }
+function confirmWriteFinish(){ modal(`<h3>Hamarana ny Schreiben?</h3><p class="muted">Hitsirina ireo asa soratra ary homena naoty /100 ianao. · Correction et note /100.</p><div class="row"><button class="btn acc" onclick="closeModal();finishWriteExam()">Eny · Oui</button><button class="btn ghost" onclick="closeModal()">Hiverina</button></div>`); }
 async function finishWriteExam(){
   stopTimer(); const W=curSet().schreiben;
   modal(`<h3><span class="spin"></span> Correction…</h3><p class="muted">Andraso kely. · Patiente un instant.</p>`);
@@ -469,7 +469,7 @@ async function finishWriteExam(){
     if (A.form){ const st=DB.notes[dk+"_form"]||{v:{}}; st.done=true; DB.notes[dk+"_form"]=st; const sc=formScore(A,st); pts.push(Math.round(sc.ok/sc.tot*wpts(A)*10)/10); continue; }
     const t=(DB.drafts[dk]||"").trim(); if (!t){ pts.push(0); continue; }
     const r=DB.ai[dk]&&!DB.ai[dk]._err?DB.ai[dk]:await callGemini("schreiben",aiPayload(A,t)); DB.ai[dk]=r;
-    if (r._err){ closeModal(); save(); modal(`<h3>Gemini tsy mandeha</h3>${AI_OFF}<button class="btn" style="margin-top:10px" onclick="closeModal()">OK</button>`); return; }
+    if (r._err){ closeModal(); save(); modal(`<h3>Nisy olana · Erreur</h3>${AI_OFF}<button class="btn" style="margin-top:10px" onclick="closeModal()">OK</button>`); return; }
     pts.push(writePoints(r,A)); }
   closeModal(); const score=Math.round(pts.reduce((a,b)=>a+b,0)/max*100); setRes("schreiben",{score,parts:pts});
   modal(`${resultCard(score,"Schreiben · "+esc(curSet().titre),`<p class="small muted">${W.aufgaben.map((A,i)=>`${A.nom}: ${pts[i]}/${wpts(A)}`).join(" · ")}</p>`)}<div class="row" style="margin-top:10px"><button class="btn" onclick="closeModal();S.mode='train';render()">Correction</button><button class="btn ghost" onclick="closeModal();go('level')">Hiverina</button></div>`);
@@ -604,7 +604,7 @@ function quizPick(k){ const Q=S.quiz; if (Q.ans!=null) return; Q.ans=k; const it
 function vResults(){ const mods=modsOf(curSet());
   const rows=pool().sets.map(s=>{ const r=DB.results[examKey(S.inst,S.level)+"|"+s.id]||{}; return `<tr><td><b>${esc(s.titre)}</b></td>${mods.map(k=>`<td>${r[k]?`<span class="pill ${r[k].score>=60?"g":"r"}">${r[k].score}</span>`:`<span class="muted small">—</span>`}</td>`).join("")}</tr>`; }).join("");
   return topbar()+`<div class="wrap">${backBtn("Hiverina","go('level')")}<div class="hero"><h1>Ny vokatro · Résultats</h1><p>${esc(examTitle())} · Objectif : <b>60 %</b> isaky ny module.</p></div>
-    <div class="card" style="margin-top:12px;overflow-x:auto"><table class="t"><tr><th>Modellsatz</th>${mods.map(k=>`<th>${MODS[k].de}</th>`).join("")}</tr>${rows}</table><p class="small muted" style="margin:10px 0 0">Sprechen = auto-évaluation. Schreiben = note Gemini.</p></div></div>`; }
+    <div class="card" style="margin-top:12px;overflow-x:auto"><table class="t"><tr><th>Modellsatz</th>${mods.map(k=>`<th>${MODS[k].de}</th>`).join("")}</tr>${rows}</table><p class="small muted" style="margin:10px 0 0">Sprechen = auto-évaluation. Schreiben = note IA.</p></div></div>`; }
 
 /* =========================================================
    RENDU
