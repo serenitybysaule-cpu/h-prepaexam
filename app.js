@@ -355,7 +355,7 @@ function reviewTeil(i){ S.view="run"; S.mode="review"; S.teil=i; render(); scrol
    ========================================================= */
 async function callGemini(task,data){ try{ const r=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json",...(DB.token&&!String(DB.token).startsWith("local:")?{authorization:"Bearer "+DB.token}:{})},body:JSON.stringify({task,data})}); const j=await r.json().catch(()=>({})); if (!r.ok||!j.ok) throw 0; return j.result; }catch(e){ return {_err:true}; } }
 const AI_OFF=`<div class="aibox">⚠️ Nisy olana ny serivisy ankehitriny. Andramo indray any aoriana.<br><span class="fr">Une erreur est survenue. Veuillez réessayer plus tard.</span></div>`;
-const aiHtml = r => r._err ? AI_OFF : `<div class="aibox"><b>🤖 IA</b>${bi(r)}</div>`;
+const aiHtml = r => r._err ? AI_OFF : `<div class="aibox"><b>🤖 Fanazavana</b>${bi(r)}</div>`;
 function stripHtml(h){ const d=document.createElement("div"); d.innerHTML=h||""; return d.textContent; }
 async function aiExplain(n){
   const {it,t}=findItem(n), box=$("#ai"+n); if (!box) return;
@@ -414,7 +414,7 @@ function vWrite(){
     <details><summary>Redemittel — fehezanteny ilaina · phrases utiles</summary><div class="in rm"><ul>${A.redemittel.map(r=>`<li>${esc(r)}</li>`).join("")}</ul></div></details>
     <div class="card" style="margin-top:12px"><h3 style="font-size:16px">✔️ Checklist · Hamarino ny lahatsoratrao</h3>${A.checklist.map((c,i)=>`<label class="check"><input type="checkbox" ${DB.notes[dk+"_c"+i]?"checked":""} onchange="DB.notes['${dk}_c${i}']=this.checked;save()"><span>${esc(c)}</span></label>`).join("")}</div>`}
     <div class="row" style="margin-top:12px">
-      ${CFG.gemini&&!isTrial()?`<button class="btn ai" onclick="aiWrite(${S.teil})">🤖 Correction IA</button>`:""}
+      ${CFG.gemini&&!isTrial()?`<button class="btn ai" onclick="aiWrite(${S.teil})">🤖 Correction</button>`:""}
       ${exam?`<button class="btn acc" onclick="confirmWriteFinish()">Hamarana · Terminer et noter</button>`:`<button class="btn teal" onclick="S.showModel=!S.showModel;render()">${S.showModel?"Afeno":"Jereo"} ny modèle</button>`}
       ${isTrial()||exam?"":`<a class="btn wa" target="_blank" rel="noopener" href="#" onclick="this.href=waLink('Schreiben ${S.level} – ${A.nom} ('+DB.user.id+'):\\n\\n'+($('#ta').value||''))">Alefa amin'ny mpampianatra</a>`}
     </div>
@@ -445,13 +445,13 @@ function toggleWriteTimer(min){ if (S.timer){ stopTimer(); $("#tbtn").textConten
 function writePoints(ai,A){ if (!ai||ai._err||!ai.criteres) return null; const vals=Object.values(ai.criteres).map(c=>GRADE[(c.note||"E").trim()[0]]??0); return Math.round(vals.reduce((a,b)=>a+b,0)/Math.max(vals.length,1)*wpts(A)*10)/10; }
 function writeAiHtml(ai,A){
   if (ai._err) return AI_OFF;
-  return `<div class="card" style="margin-top:12px;border-color:#c9b8f7"><div class="row"><h3 style="font-size:17px">🤖 Correction IA</h3><div class="sp"></div><span class="pill b" style="font-size:14px">${writePoints(ai,A)} / ${wpts(A)} points</span></div>
+  return `<div class="card" style="margin-top:12px;border-color:#c9b8f7"><div class="row"><h3 style="font-size:17px">🤖 Correction</h3><div class="sp"></div><span class="pill b" style="font-size:14px">${writePoints(ai,A)} / ${wpts(A)} points</span></div>
     <table class="t" style="margin-top:8px">${Object.entries(ai.criteres||{}).map(([k,c])=>`<tr><td style="width:44px"><span class="grade g${(c.note||"E").trim()[0]}">${esc((c.note||"").trim()[0])}</span></td><td><b>${esc(k)}</b>${bi(c)}</td></tr>`).join("")}</table>
     ${(ai.fautes||[]).length?`<h4 style="margin:14px 0 4px">Hadisoana · Fautes</h4>${ai.fautes.map(f=>`<div class="fault"><s>${esc(f.faux)}</s> → <b>${esc(f.correct)}</b>${bi(f)}</div>`).join("")}`:""}
     ${ai.points_forts?`<h4 style="margin:14px 0 4px">👍 Ny tsara · Points forts</h4>${bi(ai.points_forts)}`:""}
     ${ai.conseil?`<h4 style="margin:14px 0 4px">🎯 Torohevitra · Conseil</h4>${bi(ai.conseil)}`:""}
     ${ai.version_corrigee?`<details><summary>Texte corrigé</summary><div class="in"><div class="model">${esc(ai.version_corrigee)}</div></div></details>`:""}
-    <p class="small muted">Naoty tombana avy amin'ny IA. · Note estimée par l'IA ; le professeur donne la note finale.</p></div>`;
+    <p class="small muted">Naoty tombana. · Note estimée ; le professeur donne la note finale.</p></div>`;
 }
 function aiPayload(A,texte){ const W=curSet().schreiben; return {examen:examTitle(),niveau:S.level,nom:A.nom,mots:A.mots,type:A.type,consigne:stripHtml(A.consigne),texte,criteres:W.criteres.map(c=>c.nom)}; }
 async function aiWrite(idx){
@@ -604,7 +604,7 @@ function quizPick(k){ const Q=S.quiz; if (Q.ans!=null) return; Q.ans=k; const it
 function vResults(){ const mods=modsOf(curSet());
   const rows=pool().sets.map(s=>{ const r=DB.results[examKey(S.inst,S.level)+"|"+s.id]||{}; return `<tr><td><b>${esc(s.titre)}</b></td>${mods.map(k=>`<td>${r[k]?`<span class="pill ${r[k].score>=60?"g":"r"}">${r[k].score}</span>`:`<span class="muted small">—</span>`}</td>`).join("")}</tr>`; }).join("");
   return topbar()+`<div class="wrap">${backBtn("Hiverina","go('level')")}<div class="hero"><h1>Ny vokatro · Résultats</h1><p>${esc(examTitle())} · Objectif : <b>60 %</b> isaky ny module.</p></div>
-    <div class="card" style="margin-top:12px;overflow-x:auto"><table class="t"><tr><th>Modellsatz</th>${mods.map(k=>`<th>${MODS[k].de}</th>`).join("")}</tr>${rows}</table><p class="small muted" style="margin:10px 0 0">Sprechen = auto-évaluation. Schreiben = note IA.</p></div></div>`; }
+    <div class="card" style="margin-top:12px;overflow-x:auto"><table class="t"><tr><th>Modellsatz</th>${mods.map(k=>`<th>${MODS[k].de}</th>`).join("")}</tr>${rows}</table><p class="small muted" style="margin:10px 0 0">Sprechen = auto-évaluation. Schreiben = note.</p></div></div>`; }
 
 /* =========================================================
    RENDU
